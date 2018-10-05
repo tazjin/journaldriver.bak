@@ -4,16 +4,28 @@ journaldriver
 This is a small daemon used to forward logs from `journald` (systemd's
 logging service) to [Stackdriver Logging][].
 
-Most existing log services are written in inefficient dynamic
-languages with error-prone "cover every use-case" configuration. This
-tool aims to fit a specific use-case very well, instead of covering
-every possible logging setup.
+Many existing log services are written in inefficient dynamic
+languages with error-prone "cover every possible use-case"
+configuration. `journaldrive` instead aims to fit a specific use-case
+very well, instead of covering every possible logging setup.
 
 `journaldriver` can be run on GCP-instances with no additional
 configuration as authentication tokens are retrieved from the
 [metadata server][].
 
-## Features
+<!-- markdown-toc start - Don't edit this section. Run M-x markdown-toc-refresh-toc -->
+**Table of Contents**
+
+- [Features](#features)
+- [Usage on Google Cloud Platform](#usage-on-google-cloud-platform)
+- [Usage outside of Google Cloud Platform](#usage-outside-of-google-cloud-platform)
+- [Log levels / severities / priorities](#log-levels--severities--priorities)
+- [NixOS module](#nixos-module)
+- [Stackdriver Error Reporting](#stackdriver-error-reporting)
+
+<!-- markdown-toc end -->
+
+# Features
 
 * `journaldriver` persists the last forwarded position in the journal
   and will resume forwarding at the same position after a restart
@@ -25,7 +37,7 @@ configuration as authentication tokens are retrieved from the
 * `journaldriver` will recognise journald's log priority levels and
   convert them into equivalent Stackdriver log severity levels
 
-## Usage on Google Cloud Platform
+# Usage on Google Cloud Platform
 
 `journaldriver` does not require any configuration when running on GCP
 instances.
@@ -42,7 +54,7 @@ instances.
 
 3. Start `journaldriver`, for example via `systemd`.
 
-## Usage outside of Google Cloud Platform
+# Usage outside of Google Cloud Platform
 
 When running outside of GCP, the following extra steps need to be
 performed:
@@ -62,7 +74,7 @@ performed:
      `journaldriver` if unset, but it is recommended to - for
      example - set it to the machine hostname.
 
-## Log levels / severities / priorities
+# Log levels / severities / priorities
 
 `journaldriver` recognises [journald's priorities][] and converts them
 into [equivalent severities][] in Stackdriver. Both sets of values
@@ -80,11 +92,12 @@ $ echo '<4>{"fnord":true, "msg":"structured log (warning)"}' | systemd-cat
 $ echo '<4>unstructured log (warning)' | systemd-cat
 ```
 
-## NixOS module
+# NixOS module
 
-At Aprila we deploy all of our software using [NixOS][], including
-`journaldriver`. The NixOS package repository [contains a module][]
-for setting up `journaldriver`.
+The NixOS package repository [contains a module][] for setting up
+`journaldriver` on NixOS machines. NixOS by default uses `systemd` for
+service management and `journald` for logging, which means that log
+output from most services will be captured automatically.
 
 On a GCP instance the only required option is this:
 
@@ -107,6 +120,19 @@ services.journaldriver = {
 **Note**: The `journaldriver`-module is not yet included in a stable
 release of NixOS, but it is available on the `unstable`-channel.
 
+# Stackdriver Error Reporting
+
+The [Stackdriver Error Reporting][] service of Google's monitoring
+toolbox supports automatically detecting and correlating errors from
+log entries.
+
+To use this functionality log messages must be logged in the expected
+[log format][].
+
+*Note*: Currently errors logged from non-GCP instances are not
+ingested into Error Reporting. Please see [issue #4][] for more
+information about this.
+
 [Stackdriver Logging]: https://cloud.google.com/logging/
 [metadata server]: https://cloud.google.com/compute/docs/storing-retrieving-metadata
 [Google's documentation]: https://cloud.google.com/logging/docs/access-control
@@ -115,3 +141,6 @@ release of NixOS, but it is available on the `unstable`-channel.
 [journald's priorities]: http://0pointer.de/public/systemd-man/sd-daemon.html
 [equivalent severities]: https://cloud.google.com/logging/docs/reference/v2/rest/v2/LogEntry#logseverity
 [priority prefixes]: http://0pointer.de/public/systemd-man/sd-daemon.html
+[Stackdriver Error Reporting]: https://cloud.google.com/error-reporting/
+[log format]: https://cloud.google.com/error-reporting/docs/formatting-error-messages
+[issue #4]: https://github.com/tazjin/journaldriver/issues/4

@@ -74,7 +74,7 @@ different commit. Introducing a new feature and refactoring
 
 `git commit -a` is generally **taboo**.
 
-In our experience making "sane" commits becomes *significantly* easier
+In my experience making "sane" commits becomes *significantly* easier
 as developer tooling is improved. The interface to `git` that I
 recommend is [magit][]. Even if you are not yet an Emacs user, it
 makes sense to install Emacs just to be able to use magit - it is
@@ -91,16 +91,16 @@ very subjective, but as an example if you place code that throws away
 errors into a block in which errors are handled properly your change
 will be rejected.
 
-In our experience there is a strong correlation between the visual
+In my experience there is a strong correlation between the visual
 appearance of a code block and its quality. This is a simple way to
 sanity-check your work while squinting and keeping some distance from
 your screen ;-)
 
 ## Builds & tests
 
-Most of our projects are built using [Nix][] to avoid "build
-pollution" via the user's environment. If you have Nix installed and
-are contributing to a project that has a `default.nix`, consider using
+Most of my projects are built using [Nix][] to avoid "build pollution"
+via the user's environment. If you have Nix installed and are
+contributing to a project that has a `default.nix`, consider using
 `nix-build` to verify that builds work correctly.
 
 If the project has tests, check that they still work before submitting
