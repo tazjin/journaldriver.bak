@@ -10,7 +10,7 @@ with pkgs; rustPlatform.buildRustPackage {
   inherit doCheck;
 
   name        = "journaldriver";
-  version     = "1.0.0";
+  version     = "1.1.0";
   cargoSha256 = "03rq96hzv97wh2gbzi8sz796bqgh6pbpvdn0zy6zgq2f2sgkavsl";
 
   src = ./.;

@@ -6,7 +6,7 @@ logging service) to [Stackdriver Logging][].
 
 Many existing log services are written in inefficient dynamic
 languages with error-prone "cover every possible use-case"
-configuration. `journaldrive` instead aims to fit a specific use-case
+configuration. `journaldriver` instead aims to fit a specific use-case
 very well, instead of covering every possible logging setup.
 
 `journaldriver` can be run on GCP-instances with no additional

@@ -1,7 +1,7 @@
 [package]
 name = "journaldriver"
-version = "1.0.0"
-authors = ["Vincent Ambo <vincent@aprila.no>"]
+version = "1.1.0"
+authors = ["Vincent Ambo <mail@tazj.in>"]
 license = "GPL-3.0-or-later"
 
 [dependencies]
