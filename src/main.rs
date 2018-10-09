@@ -494,6 +494,18 @@ fn receiver_loop(mut journal: Journal) -> Result<()> {
 /// is still being written, this will first write the cursor into a
 /// temporary file and then move it.
 fn persist_cursor(cursor: String) -> Result<()> {
+    // This code exists to aid in tracking down if there are other
+    // causes of issue #2 than what has already been taken care of.
+    //
+    // One theory is that journald (or the Rust library to interface
+    // with it) may occasionally return empty cursor strings. If this
+    // is ever the case, we would like to know about it.
+    if cursor.is_empty() {
+        error!("Received empty journald cursor position, refusing to persist!");
+        error!("Please report this message at https://github.com/tazjin/journaldriver/issues/2");
+        return Ok(())
+    }
+
     let mut file = File::create(&*CURSOR_TMP_FILE)?;
     write!(file, "{}", cursor).context("Failed to write cursor file")?;
     rename(&*CURSOR_TMP_FILE, &*CURSOR_FILE)
