@@ -1,4 +1,4 @@
-// Copyright (C) 2018  Aprila Bank ASA (contact: vincent@aprila.no)
+// Copyright (C) 2018 Vincent Ambo <mail@tazj.in>
 //
 // journaldriver is free software: you can redistribute it and/or
 // modify it under the terms of the GNU General Public License as
@@ -49,7 +49,7 @@ use chrono::prelude::*;
 use failure::ResultExt;
 use serde_json::{from_str, Value};
 use std::env;
-use std::fs::{self, File};
+use std::fs::{self, File, rename};
 use std::io::{self, Read, ErrorKind, Write};
 use std::mem;
 use std::path::PathBuf;
@@ -105,9 +105,16 @@ lazy_static! {
 
     /// Path to the file in which journaldriver should persist its
     /// cursor state.
-    static ref POSITION_FILE: PathBuf = env::var("CURSOR_POSITION_FILE")
+    static ref CURSOR_FILE: PathBuf = env::var("CURSOR_POSITION_FILE")
         .unwrap_or("/var/lib/journaldriver/cursor.pos".into())
         .into();
+
+    /// Path to the temporary file used for cursor position writes.
+    static ref CURSOR_TMP_FILE: PathBuf = {
+        let mut tmp_path = CURSOR_FILE.clone();
+        tmp_path.set_extension("pos.tmp");
+        tmp_path
+    };
 }
 
 /// Convenience helper for retrieving values from the metadata server.
@@ -482,10 +489,16 @@ fn receiver_loop(mut journal: Journal) -> Result<()> {
     }
 }
 
-/// Writes the current cursor into `/var/journaldriver/cursor.pos`.
+/// Writes the current cursor into `/var/journaldriver/cursor.pos`. To
+/// avoid issues with journaldriver being terminated while the cursor
+/// is still being written, this will first write the cursor into a
+/// temporary file and then move it.
 fn persist_cursor(cursor: String) -> Result<()> {
-    let mut file = File::create(&*POSITION_FILE)?;
-    write!(file, "{}", cursor).map_err(Into::into)
+    let mut file = File::create(&*CURSOR_TMP_FILE)?;
+    write!(file, "{}", cursor).context("Failed to write cursor file")?;
+    rename(&*CURSOR_TMP_FILE, &*CURSOR_FILE)
+        .context("Failed to move cursor file")
+        .map_err(Into::into)
 }
 
 /// Flushes all drained records to Stackdriver. Any Stackdriver
@@ -564,7 +577,7 @@ fn write_entries(token: &Token, request: Value) -> Result<()> {
 fn initial_cursor() -> Result<JournalSeek> {
     let read_result: io::Result<String> = (|| {
         let mut contents = String::new();
-        let mut file = File::open(&*POSITION_FILE)?;
+        let mut file = File::open(&*CURSOR_FILE)?;
         file.read_to_string(&mut contents)?;
         Ok(contents.trim().into())
     })();
@@ -586,7 +599,7 @@ fn main () {
 
     // If the cursor file does not yet exist, the directory structure
     // leading up to it should be created:
-    let cursor_position_dir = POSITION_FILE.parent()
+    let cursor_position_dir = CURSOR_FILE.parent()
         .expect("Invalid cursor position file path");
 
     fs::create_dir_all(cursor_position_dir)
