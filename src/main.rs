@@ -103,17 +103,24 @@ lazy_static! {
     /// information.
     static ref MONITORED_RESOURCE: Value = determine_monitored_resource();
 
-    /// Path to the file in which journaldriver should persist its
-    /// cursor state.
-    static ref CURSOR_FILE: PathBuf = env::var("CURSOR_POSITION_FILE")
-        .unwrap_or("/var/lib/journaldriver/cursor.pos".into())
+    /// Path to the directory in which journaldriver should persist
+    /// its cursor state.
+    static ref CURSOR_DIR: PathBuf = env::var("CURSOR_POSITION_DIR")
+        .unwrap_or("/var/lib/journaldriver".into())
         .into();
+
+    /// Path to the cursor position file itself.
+    static ref CURSOR_FILE: PathBuf = {
+        let mut path = CURSOR_DIR.clone();
+        path.push("cursor.pos");
+        path
+    };
 
     /// Path to the temporary file used for cursor position writes.
     static ref CURSOR_TMP_FILE: PathBuf = {
-        let mut tmp_path = CURSOR_FILE.clone();
-        tmp_path.set_extension("pos.tmp");
-        tmp_path
+        let mut path = CURSOR_DIR.clone();
+        path.push("cursor.tmp");
+        path
     };
 }
 
@@ -506,8 +513,11 @@ fn persist_cursor(cursor: String) -> Result<()> {
         return Ok(())
     }
 
-    let mut file = File::create(&*CURSOR_TMP_FILE)?;
+    let mut file = File::create(&*CURSOR_TMP_FILE)
+        .context("Failed to create cursor file")?;
+
     write!(file, "{}", cursor).context("Failed to write cursor file")?;
+
     rename(&*CURSOR_TMP_FILE, &*CURSOR_FILE)
         .context("Failed to move cursor file")
         .map_err(Into::into)
@@ -609,8 +619,13 @@ fn initial_cursor() -> Result<JournalSeek> {
 fn main () {
     env_logger::init();
 
-    // If the cursor file does not yet exist, the directory structure
-    // leading up to it should be created:
+    // The directory in which cursor positions are persisted should
+    // have been created:
+    if !CURSOR_DIR.exists() {
+        error!("Cursor directory at '{:?}' does not exist", *CURSOR_DIR);
+        process::exit(1);
+    }
+
     let cursor_position_dir = CURSOR_FILE.parent()
         .expect("Invalid cursor position file path");
 
