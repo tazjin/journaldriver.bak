@@ -160,9 +160,24 @@ fn get_project_id() -> String {
 /// the metadata server.
 ///
 /// On non-GCP machines the value is determined by using the
-/// `GOOGLE_CLOUD_PROJECT` and `LOG_NAME` environment variables.
+/// `GOOGLE_CLOUD_PROJECT` and `LOG_STREAM` environment variables.
+///
+/// [issue #4]: https://github.com/tazjin/journaldriver/issues/4
 fn determine_monitored_resource() -> Value {
     if let Ok(log) = env::var("LOG_STREAM") {
+        // The special value `global` is recognised as a log stream name that
+        // results in a `global`-type resource descriptor. This is useful in
+        // cases where Stackdriver Error Reporting is intended to be used on
+        // a non-GCE instance. See [issue #4][] for details.
+        if log == "global" {
+            return json!({
+                "type": "global",
+                "labels": {
+                    "project_id": PROJECT_ID.as_str(),
+                }
+            });
+        }
+
         json!({
             "type": "logging_log",
             "labels": {
