@@ -129,9 +129,15 @@ log entries.
 To use this functionality log messages must be logged in the expected
 [log format][].
 
-*Note*: Currently errors logged from non-GCP instances are not
-ingested into Error Reporting. Please see [issue #4][] for more
-information about this.
+*Note*: Reporting errors from non-GCP instances requires that the
+`LOG_STREAM` environment variable is set to the special value
+`global`.
+
+This value changes the monitored resource descriptor from a log stream
+to the project-global stream. Due to a limitation in Stackdriver Error
+Reporting, this is the only way to correctly ingest errors from
+non-GCP machines. Please see [issue #4][] for more information about
+this.
 
 [Stackdriver Logging]: https://cloud.google.com/logging/
 [metadata server]: https://cloud.google.com/compute/docs/storing-retrieving-metadata
